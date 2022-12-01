@@ -144,6 +144,21 @@
         }) // This is a little tricky. We're adding an event listener to every button with the class "add-to-cart". When the button is clicked, we get the id from the button's data-id attribute, and then we find the product in our data that matches that id. Then we add that product to our cart. We had to wait until the products were rendered to the page before we could add the event listeners, because the buttons didn't exist until then.
       }
 
+      const ProductPage = async function (id) {
+        console.log(`Product ${id} just rendered`)
+        const data = await db()
+        const product = data.products.find(
+          (product) => product.id === Number(id) // We need to convert the id to a number because it's a string in the URL, but a number in the JSON data.
+        )
+        product ? render(ProductComponent(product)) : Nope(id) // If we find a product, render it. If not, render the 404 page.
+        if (product)
+          document
+            .querySelector(".add-to-cart")
+            .addEventListener("click", (e) => {
+              addToCart(product)
+            }) // This is the same as the event listener in the ProductsPage function, but we only need to add it to one button, because there's only one button on the product page.
+      }
+
       const Cart = async () => {
         console.log("Cart Component just rendered")
         const cart = JSON.parse(localStorage.getItem("cart")) || {} // Get the cart from localStorage, or set it to an empty object if it doesn't exist.
@@ -258,3 +273,8 @@
     </script>
   </body>
 </html>
+
+//Why is the ProductPage function running on every route? Theory: It's because
+the ProductPage function is being called in the Routes object, and the Routes
+object is being called in the Router function. I think I need to move the
+ProductPage function out of the Routes object and into the Router function.
