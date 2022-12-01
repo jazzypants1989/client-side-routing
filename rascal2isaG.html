@@ -4,39 +4,32 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tell me this isn't a SPA</title>
+    <title>Tell me this isn't an SPA</title>
   </head>
   <style>
-    body {
-      position: absolute;
-      overflow: hidden;
+    .dark {
       background-color: #222;
       color: #fff;
       width: 100%;
       height: 100%;
-      margin: 0;
-      padding: 0;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      overflow: hidden;
     }
 
-    a {
+    .dark a {
       color: #88f;
     }
 
-    nav,
-    footer {
-      width: 100%;
-      position: absolute;
-      background-color: #222;
-    }
-
     nav {
-      top: 0;
-      left: 0;
+      width: 100%;
+      margin-top: 1rem 0;
     }
 
     ul {
@@ -46,13 +39,6 @@
       list-style: none;
     }
 
-    main {
-      width: 100%;
-      overflow-y: auto;
-      margin: 2rem auto;
-      padding: 0;
-    }
-
     img {
       aspect-ratio: 1/1;
       object-fit: contain;
@@ -60,11 +46,15 @@
       max-height: 50vh;
     }
 
-    footer {
-      bottom: 0;
+    main {
+      width: 90%;
+      min-height: 92vh;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
     }
   </style>
-  <body>
+  <body class="dark">
     <nav>
       <ul>
         <li>
@@ -85,20 +75,19 @@
     <footer>
       <a href="http://jazzypants.dev"> © 2023 Jovial Penguin, LLC.</a>
     </footer>
-    <script async>
+    <script defer>
       const main = document.querySelector(".main") // Get the main element, which will be used to render the dynamic content
       const links = document.querySelectorAll(".Link") // instead of targeting every anchor tag, we only target the ones meant for navigating around our app.
       const path = window.location.pathname // Get the current path from the URL entered in the browser
 
       const db = async () => {
-        console.log("Fetching data...")
         const response = await fetch("/db.json") // Fetch the data from the db.json file
-        const data = await response.json() // Parse the data into a JSON object
+        const data = response.json() // Parse the data into a JSON object
         return data // Return the data
       }
 
       const Home = () => {
-        console.log("Home is rendering")
+        console.log("The Home Component is being rendered")
         render(`
         <p>This is a totally real shop! See! That's a picture! Of a shop! Totally
       open.</p>
@@ -107,7 +96,7 @@
       } // Did I just write a functional component in vanilla JS? Yes. Yes I did.
 
       const About = () => {
-        console.log("About is rendering")
+        console.log("The About Component is being rendered")
         render(`
         <h1>About</h1>
       <p>
@@ -119,44 +108,41 @@
       }
 
       const ProductComponent = (product) => {
-        console.log("Product Component is rendering")
+        console.log("A product is being rendered")
         return `
         <div class="product">
-          <a href="/product?id=${product.id}" class="Link">
+          <a href="/product?id=${product.id}">
             <img src="${product.image}" alt="${product.name}" />
           <h2>${product.name}</h2>
           </a>
           <p>${product.description}</p>
           <p>$${product.price}</p>
-          <button class="add-to-cart" data-id="${product.id}">Add to cart</button>
+          <button class="add-to-cart" id="${product.id}">Add to cart</button>
         </div>
         `
-      } // Oh look, we're passing props now, and we didn't even need to destructure them!
+      } // Oh look, we're passing props now. This is getting serious.
 
       const ProductsPage = async () => {
-        console.log("Products Page Component is rendering")
-        // this has to be async because we're using the function needs to "AWAIT" the data that's being fetched from the "API"
-        const data = await db() // Get the data from the "API"
+        console.log("The Products Component is being rendered")
+        // this has to be async because we're using the asynchronous function needs to "await" the data that's being fetched from the "API"
+        const data = await db()
         const products = data.products
         const productsHTML = products.map(ProductComponent).join("") // Map over the products and render the ProductComponent for each one. Then join them all together into a string. (This is necessary because map returns an array, and we need a string to render HTML in the browser.)
-        console.log(productsHTML) // just so you can see what our template ends up looking like
         render(`<h1>Products</h1>${productsHTML}`)
 
         document.querySelectorAll(".add-to-cart").forEach((button) => {
           button.addEventListener("click", (e) => {
-            const id = e.target.dataset.id
+            const id = e.target.id
             const product = products.find(
               (product) => product.id === Number(id)
             )
             addToCart(product)
           })
-        }) // This is a little tricky. We're adding an event listener to every button with the class "add-to-cart". When the button is clicked, we get the id from the button's data-id attribute, and then we find the product in our data that matches that id. Then we add that product to our cart. We had to wait until the products were rendered to the page before we could add the event listeners, because the buttons didn't exist until then.
+        }) // This is a little tricky. We're adding an event listener to every button with the class "add-to-cart". When the button is clicked, we get the id from the button's id attribute, and then we find the product in the products array that matches that id. We had to wait until the products were rendered to the page before we could add the event listeners, because the buttons didn't exist until then.
       }
 
-      const ProductPage = async (id) => {
-        console.log(
-          `Product Page Component is rendering product with ID: ${id}`
-        )
+      const ProductPage = async function (id) {
+        console.log(`Product ${id} just rendered`)
         const data = await db()
         const product = data.products.find(
           (product) => product.id === Number(id) // We need to convert the id to a number because it's a string in the URL, but a number in the JSON data.
@@ -167,11 +153,11 @@
             .querySelector(".add-to-cart")
             .addEventListener("click", (e) => {
               addToCart(product)
-            }) // This is the same as the event listener in the ProductsPage function, but we only need to add it to one button, because there's only one button on the product page.
+            }) // This is the same as the event listener in the ProductsPage function, but because we're only rendering one product, we don't need to worry about multiple buttons.
       }
 
       const Cart = async () => {
-        console.log("Cart Component is rendering")
+        console.log("Cart Component just rendered")
         const cart = JSON.parse(localStorage.getItem("cart")) || {} // Get the cart from localStorage, or set it to an empty object if it doesn't exist.
         const data = await db()
         const products = data.products
@@ -204,8 +190,9 @@
       }
 
       const Nope = (id) => {
-        console.log(`404 Component is rendering on ${path}.`)
-        console.log(`ID detected: ${!!id}`) // The double bang is just a fancy way of converting the id to a boolean. If there's an id, it'll be true. If there isn't, it'll be false.
+        console.log(window.location.pathname)
+        console.log("404 Component just rendered")
+        console.log(id)
         if (id) {
           render(
             `<h1>404</h1><h2>Sorry buddy, but I don't think we have a product with id #${id}!</h2>`
@@ -218,30 +205,44 @@
         }
       } // Only on v1 of this project, and I already have 2 404 pages... I think that's a good sign?
 
-      const Routes = [
-        { path: "/", component: Home },
-        { path: "/about", component: About },
-        { path: "/products", component: ProductsPage },
-        { path: "/product", component: ProductPage, params: searchFinder() }, // This is why we changed the Routes config to an array of objects. We can pass props to the component now.
-        { path: "/cart", component: Cart },
-      ]
+      const Routes = {
+        "/": Home,
+        "/about": About,
+        "/products": ProductsPage,
+        "/product": {
+          component: ProductPage,
+          props: searchFinder,
+        },
+        "/cart": Cart,
+      } // Pretty clean, right? No more in-line functions.
 
-      const Router = (whatIsInAddressBar) => {
-        console.log(
-          `Router found ${whatIsInAddressBar} in the address bar and is attempting to match it to a route.`
-        )
-        const Route = Routes.find(
-          (Route) =>
-            Route.path === whatIsInAddressBar ||
-            Route.path + "/" === whatIsInAddressBar // This is so that if the user types in "/about/" or "/about", it'll still work.
-        )
-        if (Route) {
-          Route.component(Route.params) // If there are no params, the argument will be undefined, which is fine. The function will still run.
-          console.log(`Params detected: ${!!Route.params}`)
+      const Router = (match) => {
+        console.log(`Router is finding a match for ${match}`)
+        if (Routes[match]) {
+          const Component = Routes[match].component || Routes[match]
+          const Props = Routes[match].props || null
+          console.log(`Props: True or False = ${!!Props}`)
+          if (Props) {
+            Component(Props())
+          } else {
+            Component()
+          }
         } else {
-          Nope() // If there's no route, render the 404 page.
+          Nope()
         }
-      }
+      } // I just love how semantic this ended up being.
+
+      links.forEach((link) => {
+        console.log(`Adding event listener to ${link}`)
+        // Target each link that we have targeted with the Link class,
+        link.addEventListener("click", (e) => {
+          // add a click event listener
+          e.preventDefault() // prevent the default behavior of the anchor tag
+          const linkPath = link.getAttribute("href") // get the href attribute of the link
+          history.pushState(null, null, linkPath) // push the link's path to the history object
+          Router(linkPath) // call the Router function with the link's path
+        }) // Ta-da! We have a SPA! Oh, wait. We need to call the Router function once to render the initial page.
+      })
 
       function addToCart(product) {
         console.log(`Added ${product.name} to cart`)
@@ -250,7 +251,7 @@
           // If the product is already in the cart, increment the quantity.
           cart[product.id].quantity++
         } else {
-          // If the product isn't in the cart, add it and add a quantity property. (Notice how this doesn't conflict with the quantity property that's already on the product object. This is because we're adding the quantity property to the cart object, not the product object.)
+          // If the product isn't in the cart, add it.
           cart[product.id] = {
             quantity: 1,
             product,
@@ -262,12 +263,7 @@
 
       function paramFinder() {
         const url = window.location.pathname
-        const param = url.split("/").pop()
-        if (param.charAt(0) === "<") {
-          alert("You're trying to hack me, aren't you?") // This won't prevent all XSS attacks, but it'll prevent the most common ones. I'm not going to go into detail about XSS attacks, but if you're interested, you can read more about them here: https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
-          // One other thing we could do other than charAt to prevent XSS attacks is to use a regex to filter out all characters that aren't numbers. I'm not going to do that here, because I want to keep the code as simple as possible. I hate regex.
-          return undefined
-        } else console.log(`searchFinder found ${search}`)
+        const param = url.split("/")[2]
         console.log(`paramFinder found ${param}`)
         return param
       }
@@ -275,42 +271,19 @@
       function searchFinder() {
         const params = new URLSearchParams(window.location.search)
         const search = params.get("id")
-        if (search && search.charAt(0) === "<") {
-          alert("You're trying to hack me, aren't you?") // This won't prevent all XSS attacks, but it'll prevent the most common ones. I'm not going to go into detail about XSS attacks, but if you're interested, you can read more about them here: https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
-          // One other thing we could do other than charAt to prevent XSS attacks is to use a regex to filter out all characters that aren't numbers. I'm not going to do that here, because I want to keep the code as simple as possible. I hate regex.
-          return undefined
-        } else console.log(`searchFinder found ${search}`)
+        console.log(`searchFinder found ${search}`)
         return search
       }
 
-      function linkFinder() {
-        links.forEach((link) => {
-          console.log(`Changing link behavior of ${link}`)
-          // Target each link that we have targeted with the Link class,
-          link.addEventListener("click", (e) => {
-            // add a click event listener
-            e.preventDefault() // prevent the default behavior of the anchor tag
-            const linkPath = link.getAttribute("href") // get the href attribute of the link
-            history.pushState(null, null, linkPath) // push the link's path to the history object
-            Router(linkPath) // call the Router function with the link's path
-          }) // Ta-da! We have a SPA! Oh, wait. We need to call the Router function once to render the initial page.
-        })
-      }
-
-      async function render(component) {
-        console.log(`The render function is running with ${component}`)
+      function render(component) {
+        console.log(`The render function just ran with ${component}`)
         main.innerHTML = component // Since we only have one dynamic element on the page and very little state, this function is pretty simple.
-        await linkFinder()
       }
 
       Router(path) // After the rest of the script has loaded, call the Router function with the current path to render the correct View.
 
       window.addEventListener("load", () => {
         // when the DOM is loaded,
-        setTimeout(() => {
-          // wait 1 second
-          linkFinder() // Why doesn't this work!?!? I'm even waiting on the DOM to load! I'm so confused.
-        }, 1000)
         window.addEventListener("popstate", () => {
           console.log(
             "A popstate event just fired, so the Router function is running again."

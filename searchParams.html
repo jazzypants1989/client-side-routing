@@ -48,8 +48,8 @@
 
     main {
       width: 90%;
-      min-height: 50vh;
-      overflow-y: scroll;
+      min-height: 92vh;
+      overflow-y: auto;
       margin: 0;
       padding: 0;
     }
@@ -79,8 +79,6 @@
       const main = document.querySelector(".main") // Get the main element, which will be used to render the dynamic content
       const links = document.querySelectorAll(".Link") // instead of targeting every anchor tag, we only target the ones meant for navigating around our app.
       const path = window.location.pathname // Get the current path from the URL entered in the browser
-      const searchParams = new URLSearchParams(window.location.search) // Get the search params from the URL entered in the browser
-      const id = searchParams.get("id") // Get the product id from the search params. This is a string, so we'll need to convert it to a number later to match the product id's in our data.
 
       const db = async () => {
         console.log("Fetching data...")
@@ -114,7 +112,7 @@
         console.log("Product just rendered")
         return `
         <div class="product">
-          <a href="/product/?id=${product.id}">
+          <a href="/product?id=${product.id}" class="Link">
             <img src="${product.image}" alt="${product.name}" />
           <h2>${product.name}</h2>
           </a>
@@ -146,7 +144,7 @@
       }
 
       const ProductPage = async (id) => {
-        console.log(`Product ${id} just rendered`)
+        console.log(`Product Component is rendering product with ID: ${id}`)
         const data = await db()
         const product = data.products.find(
           (product) => product.id === Number(id) // We need to convert the id to a number because it's a string in the URL, but a number in the JSON data.
@@ -194,9 +192,8 @@
       }
 
       const Nope = (id) => {
-        console.log(window.location.pathname)
-        console.log("404 Component just rendered")
-        console.log(id)
+        console.log(`404 Component just rendered on ${path}.`)
+        console.log(`ID detected: ${!!id}`) // The double bang is just a fancy way of converting the id to a boolean. If there's an id, it'll be true. If there isn't, it'll be false.
         if (id) {
           render(
             `<h1>404</h1><h2>Sorry buddy, but I don't think we have a product with id #${id}!</h2>`
@@ -213,35 +210,23 @@
         { path: "/", component: Home },
         { path: "/about", component: About },
         { path: "/products", component: ProductsPage },
-        { path: "/product", component: ProductPage(id) },
+        { path: "/product", component: ProductPage, params: searchFinder() }, // This is why we changed the Routes config to an array of objects. We can pass props to the component now.
         { path: "/cart", component: Cart },
-      ] // This is an array of objects that contains the routes and the components that should be rendered when those routes are visited.
+      ]
 
-      const Router = (match) => {
-        const route = Routes.find((route) => route.path === match) // Find the route that matches the path.
-        if (route && route == "/product") {
-          // If the route exists, and the route is the product page, render the product page with the id from the URL.
-          route.component(id)
-        } else if (route) {
-          // If the route exists, and the route isn't the product page, render the component that's associated with that route.
-          route.component()
+      const Router = (whatIsInAddressBar) => {
+        const Route = Routes.find(
+          (Route) =>
+            Route.path === whatIsInAddressBar ||
+            Route.path + "/" === whatIsInAddressBar // This is so that if the user types in "/about/" or "/about", it'll still work.
+        )
+        if (Route) {
+          Route.component(Route.params) // If there are no params, the argument will be undefined, which is fine. The function will still run.
+          console.log(`Params detected: ${!!Route.params}`)
         } else {
-          // If the route doesn't exist, render the 404 page.
-          Nope()
+          Nope() // If there's no route, render the 404 page.
         }
       }
-
-      links.forEach((link) => {
-        console.log(`Adding event listener to ${link}`)
-        // Target each link that we have targeted with the Link class,
-        link.addEventListener("click", (e) => {
-          // add a click event listener
-          e.preventDefault() // prevent the default behavior of the anchor tag
-          const linkPath = link.getAttribute("href") // get the href attribute of the link
-          history.pushState(null, null, linkPath) // push the link's path to the history object
-          Router(linkPath) // call the Router function with the link's path
-        }) // Ta-da! We have a SPA! Oh, wait. We need to call the Router function once to render the initial page.
-      })
 
       function addToCart(product) {
         console.log(`Added ${product.name} to cart`)
@@ -250,7 +235,7 @@
           // If the product is already in the cart, increment the quantity.
           cart[product.id].quantity++
         } else {
-          // If the product isn't in the cart, add it.
+          // If the product isn't in the cart, add it and add a quantity property. (Notice how this doesn't conflict with the quantity property that's already on the product object. This is because we're adding the quantity property to the cart object, not the product object.)
           cart[product.id] = {
             quantity: 1,
             product,
@@ -260,19 +245,59 @@
         alert(`${product.name} added to cart!`) // Alert the user that the product was added to the cart.
       }
 
-      function render(component) {
+      function paramFinder() {
+        const url = window.location.pathname
+        const param = url.split("/").pop()
+        if (param.charAt(0) === "<") {
+          alert("You're trying to hack me, aren't you?") // This won't prevent all XSS attacks, but it'll prevent the most common ones. I'm not going to go into detail about XSS attacks, but if you're interested, you can read more about them here: https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
+          // One other thing we could do other than charAt to prevent XSS attacks is to use a regex to filter out all characters that aren't numbers. I'm not going to do that here, because I want to keep the code as simple as possible. I hate regex.
+          return undefined
+        } else console.log(`searchFinder found ${search}`)
+        console.log(`paramFinder found ${param}`)
+        return param
+      }
+
+      function searchFinder() {
+        const params = new URLSearchParams(window.location.search)
+        const search = params.get("id")
+        if (search.charAt(0) === "<") {
+          alert("You're trying to hack me, aren't you?") // This won't prevent all XSS attacks, but it'll prevent the most common ones. I'm not going to go into detail about XSS attacks, but if you're interested, you can read more about them here: https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
+          // One other thing we could do other than charAt to prevent XSS attacks is to use a regex to filter out all characters that aren't numbers. I'm not going to do that here, because I want to keep the code as simple as possible. I hate regex.
+          return undefined
+        } else console.log(`searchFinder found ${search}`)
+        return search
+      }
+
+      function linkFinder() {
+        links.forEach((link) => {
+          console.log(`Changing link behavior of ${link}`)
+          // Target each link that we have targeted with the Link class,
+          link.addEventListener("click", (e) => {
+            // add a click event listener
+            e.preventDefault() // prevent the default behavior of the anchor tag
+            const linkPath = link.getAttribute("href") // get the href attribute of the link
+            history.pushState(null, null, linkPath) // push the link's path to the history object
+            Router(linkPath) // call the Router function with the link's path
+          }) // Ta-da! We have a SPA! Oh, wait. We need to call the Router function once to render the initial page.
+        })
+      }
+
+      async function render(component) {
         console.log(`The render function just ran with ${component}`)
         main.innerHTML = component // Since we only have one dynamic element on the page and very little state, this function is pretty simple.
+        await linkFinder()
       }
 
       Router(path) // After the rest of the script has loaded, call the Router function with the current path to render the correct View.
 
       window.addEventListener("load", () => {
-        console.log("Window loaded")
-
+        // when the DOM is loaded,
+        linkFinder() // call the linkFinder function to add event listeners to the links.
         window.addEventListener("popstate", () => {
-          console.log("popstate event fired")
-          Router(window.location.pathname) // When the user clicks the back button, call the Router function with the current path to render the correct View.
+          console.log(
+            "A popstate event just fired, so the Router function is running again."
+          )
+          Router(window.location.pathname) // call the Router function with the current path to render the correct View. I had to redeclare the path variable for some reason. I think it's because the Router function is being called before the path variable is declared-- even though this is the last line of the script and it's at the beginning.
         })
       })
 
