@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tell me this isn't an SPA</title>
+  </head>
+  <style>
+    .dark {
+      background-color: #222;
+      color: #fff;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      overflow: hidden;
+    }
+
+    .dark a {
+      color: #88f;
+    }
+
+    nav {
+      width: 100%;
+      margin-top: 1rem 0;
+    }
+
+    ul {
+      display: flex;
+      justify-content: space-evenly;
+      align-items: center;
+      list-style: none;
+    }
+
+    img {
+      aspect-ratio: 1/1;
+      object-fit: contain;
+      width: 100%;
+      max-height: 50vh;
+    }
+
+    main {
+      width: 90%;
+      min-height: 92vh;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <body class="dark">
+    <nav>
+      <ul>
+        <li>
+          <a href="/" class="Link">Home</a>
+        </li>
+        <li>
+          <a href="/about" class="Link">About</a>
+        </li>
+        <li>
+          <a href="/products" class="Link">Products</a>
+        </li>
+        <li>
+          <a href="/cart" class="Link">Cart </a>
+        </li>
+      </ul>
+    </nav>
+    <main class="main"></main>
+    <footer>
+      <a href="http://jazzypants.dev"> © 2023 Jovial Penguin, LLC.</a>
+    </footer>
+    <script defer>
+      const main = document.querySelector(".main") // Get the main element, which will be used to render the dynamic content
+      const links = document.querySelectorAll(".Link") // instead of targeting every anchor tag, we only target the ones meant for navigating around our app.
+      const path = window.location.pathname // Get the current path from the URL entered in the browser
+
+      const db = async () => {
+        const response = await fetch("/db.json") // Fetch the data from the db.json file
+        const data = response.json() // Parse the data into a JSON object
+        return data // Return the data
+      }
+
+      const Home = () => {
+        console.log("The Home Component is being rendered")
+        render(`
+        <p>This is a totally real shop! See! That's a picture! Of a shop! Totally
+      open.</p>
+      <img src="/diana.avif" alt="Check us out" />
+        `)
+      } // Did I just write a functional component in vanilla JS? Yes. Yes I did.
+
+      const About = () => {
+        console.log("The About Component is being rendered")
+        render(`
+        <h1>About</h1>
+      <p>
+        This is a totally real shop that sells totally real products. It's not a
+        demonstration of how client-side routing works. Noo! It's just a
+        shop.
+      </p>
+        `)
+      }
+
+      const ProductComponent = (product) => {
+        console.log("A product is being rendered")
+        return `
+        <div class="product">
+          <a href="/product?id=${product.id}">
+            <img src="${product.image}" alt="${product.name}" />
+          <h2>${product.name}</h2>
+          </a>
+          <p>${product.description}</p>
+          <p>$${product.price}</p>
+          <button class="add-to-cart" id="${product.id}">Add to cart</button>
+        </div>
+        `
+      } // Oh look, we're passing props now. This is getting serious.
+
+      const ProductsPage = async () => {
+        console.log("The Products Component is being rendered")
+        // this has to be async because we're using the asynchronous function needs to "await" the data that's being fetched from the "API"
+        const data = await db()
+        const products = data.products
+        const productsHTML = products.map(ProductComponent).join("") // Map over the products and render the ProductComponent for each one. Then join them all together into a string. (This is necessary because map returns an array, and we need a string to render HTML in the browser.)
+        render(`<h1>Products</h1>${productsHTML}`)
+
+        document.querySelectorAll(".add-to-cart").forEach((button) => {
+          button.addEventListener("click", (e) => {
+            const id = e.target.id
+            const product = products.find(
+              (product) => product.id === Number(id)
+            )
+            addToCart(product)
+          })
+        }) // This is a little tricky. We're adding an event listener to every button with the class "add-to-cart". When the button is clicked, we get the id from the button's id attribute, and then we find the product in the products array that matches that id. We had to wait until the products were rendered to the page before we could add the event listeners, because the buttons didn't exist until then.
+      }
+
+      const ProductPage = async function (id) {
+        console.log(`Product ${id} just rendered`)
+        const data = await db()
+        const product = data.products.find(
+          (product) => product.id === Number(id) // We need to convert the id to a number because it's a string in the URL, but a number in the JSON data.
+        )
+        product ? render(ProductComponent(product)) : Nope(id) // If we find a product, render it. If not, render the 404 page.
+        if (product)
+          document
+            .querySelector(".add-to-cart")
+            .addEventListener("click", (e) => {
+              addToCart(product)
+            }) // This is the same as the event listener in the ProductsPage function, but because we're only rendering one product, we don't need to worry about multiple buttons.
+      }
+
+      const Cart = async () => {
+        console.log("Cart Component just rendered")
+        const cart = JSON.parse(localStorage.getItem("cart")) || {} // Get the cart from localStorage, or set it to an empty object if it doesn't exist.
+        const data = await db()
+        const products = data.products
+        if (Object.keys(cart).length === 0) {
+          // If the cart is empty, render a message saying so.
+          render(`
+          <h1>Cart</h1>
+          <p>Your cart is empty. Go buy one of our two amazing items!</p>
+          `)
+        } else {
+          // If the cart isn't empty, render the cart items.
+          const cartItems = Object.keys(cart).map((id) => {
+            const product = products.find(
+              (product) => product.id === Number(id)
+            )
+            return `
+            <div class="cart-item">
+              <img src="${product.image}" alt="${product.name}" />
+              <h2>${product.name}</h2>
+              <p>$${product.price}</p>
+              <p>Quantity: ${cart[id].quantity}</p>
+            </div>
+            `
+          })
+          render(`
+          <h1>Cart</h1>
+          ${cartItems.join("")}
+          `)
+        }
+      }
+
+      const Nope = (id) => {
+        console.log(window.location.pathname)
+        console.log("404 Component just rendered")
+        console.log(id)
+        if (id) {
+          render(
+            `<h1>404</h1><h2>Sorry buddy, but I don't think we have a product with id #${id}!</h2>`
+          )
+        } else {
+          render(`<div>
+          <h1>404</h1>
+          <h2>Huh, you're at ${path}, but you really shouldn't be</h2>
+        </div>`)
+        }
+      } // Only on v1 of this project, and I already have 2 404 pages... I think that's a good sign?
+
+      const Routes = {
+        "/": Home,
+        "/about": About,
+        "/products": ProductsPage,
+        "/product": {
+          component: ProductPage,
+          props: searchFinder,
+        },
+        "/cart": Cart,
+      } // Pretty clean, right? No more in-line functions.
+
+      const Router = (match) => {
+        console.log(`Router is finding a match for ${match}`)
+        if (Routes[match]) {
+          const Component = Routes[match].component || Routes[match]
+          const Props = Routes[match].props || null
+          console.log(`Props: True or False = ${!!Props}`)
+          if (Props) {
+            Component(Props())
+          } else {
+            Component()
+          }
+        } else {
+          Nope()
+        }
+      } // I just love how semantic this ended up being.
+
+      links.forEach((link) => {
+        console.log(`Adding event listener to ${link}`)
+        // Target each link that we have targeted with the Link class,
+        link.addEventListener("click", (e) => {
+          // add a click event listener
+          e.preventDefault() // prevent the default behavior of the anchor tag
+          const linkPath = link.getAttribute("href") // get the href attribute of the link
+          history.pushState(null, null, linkPath) // push the link's path to the history object
+          Router(linkPath) // call the Router function with the link's path
+        }) // Ta-da! We have a SPA! Oh, wait. We need to call the Router function once to render the initial page.
+      })
+
+      function addToCart(product) {
+        console.log(`Added ${product.name} to cart`)
+        const cart = JSON.parse(localStorage.getItem("cart")) || {} // Get the cart from localStorage, or set it to an empty array if it doesn't exist.
+        if (cart[product.id]) {
+          // If the product is already in the cart, increment the quantity.
+          cart[product.id].quantity++
+        } else {
+          // If the product isn't in the cart, add it.
+          cart[product.id] = {
+            quantity: 1,
+            product,
+          }
+        }
+        localStorage.setItem("cart", JSON.stringify(cart)) // Set the cart in localStorage to the updated cart.
+        alert(`${product.name} added to cart!`) // Alert the user that the product was added to the cart.
+      }
+
+      function paramFinder() {
+        const url = window.location.pathname
+        const param = url.split("/")[2]
+        console.log(`paramFinder found ${param}`)
+        return param
+      }
+
+      function searchFinder() {
+        const params = new URLSearchParams(window.location.search)
+        const search = params.get("id")
+        console.log(`searchFinder found ${search}`)
+        return search
+      }
+
+      function render(component) {
+        console.log(`The render function just ran with ${component}`)
+        main.innerHTML = component // Since we only have one dynamic element on the page and very little state, this function is pretty simple.
+      }
+
+      Router(path) // After the rest of the script has loaded, call the Router function with the current path to render the correct View.
+
+      window.addEventListener("load", () => {
+        // when the DOM is loaded,
+        window.addEventListener("popstate", () => {
+          console.log(
+            "A popstate event just fired, so the Router function is running again."
+          )
+          Router(window.location.pathname) // call the Router function with the current path to render the correct View. I had to redeclare the path variable for some reason. I think it's because the Router function is being called before the path variable is declared-- even though this is the last line of the script and it's at the beginning.
+        })
+      })
+
+      console.log("Script fully loaded into the DOM")
+    </script>
+  </body>
+</html>

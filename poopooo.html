@@ -1,0 +1,69 @@
+<style>
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 90vh;
+    width: 50vw;
+  }
+  .btn {
+    font-size: 36rem;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+</style>
+
+<body>
+  <div id="container1" class="container">
+    <p>This container corresponds to #container1 and ?color1</p>
+  </div>
+  <a href="#container2">Click me to go down there.</a>
+  <div id="container2" class="container">
+    <p>This container corresponds to #container2 and color2</p>
+  </div>
+  <a href="#container1">Click me to go back up there.</a>
+  <button id="btn">This button gives you a hint of the future</button>
+
+  <script defer>
+    const btn = document.getElementById("btn")
+    const container1 = document.getElementById("container1")
+    const container2 = document.getElementById("container2")
+
+    btn.addEventListener("click", () => {
+      let randomColor1 = Math.floor(Math.random() * 16777215).toString(16) // random hex color
+      let randomColor2 = Math.floor(Math.random() * 16777215).toString(16)
+      window.history.pushState(
+        {},
+        "",
+        `?color1=${randomColor1}&color2=${randomColor2}` // ignore the two empty arguments, all we care about for now is the last one– the URL.
+      )
+      container1.style.backgroundColor = `#${randomColor1}`
+      container2.style.backgroundColor = `#${randomColor2}`
+    })
+
+    function colorCheck() {
+      // We’ll run this twice, so we’re defining it here to keep the code DRY
+      const urlParams = new URLSearchParams(window.location.search) // easiest way to extract search param values– you can bypass the new URL stage.
+      const color1 = urlParams.get("color1")
+      const color2 = urlParams.get("color2")
+      if (color1) {
+        container1.style.backgroundColor = `${color1}`
+      }
+      if (color2) {
+        container2.style.backgroundColor = `${color2}`
+      }
+    }
+
+    colorCheck() // initial color check
+
+    // window.addEventListener("load", () => {
+    //   // This event tells us the DOM is fully loaded
+    //   window.addEventListener("popstate", () => {
+    //     // wait to see if a popState event fires.
+    //     colorCheck() // change the colors to match the search params if a popState event fires.
+    //   })
+    // })
+  </script>
+</body>
